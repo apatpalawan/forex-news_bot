@@ -18,6 +18,9 @@ const CONFIRM_WINDOW_MINUTES = 15;      // หน้าต่างเวลา�
 const RANGE_LOOKBACK_MINUTES = 45;      // กรอบราคาก่อนข่าวเอามาจากกี่นาที
 const BREAKOUT_BUFFER_PCT = 0.0005;     // ต้อง break เกินกรอบกี่% ถึงนับ (0.05%)
 
+// แจ้งเตือนล่วงหน้าว่าข่าวกำลังจะออก (แค่บอกว่ามีข่าว ไม่ได้ทำนายทิศทาง)
+const PRE_NEWS_ALERT_MINUTES_BEFORE = 30; // แจ้งก่อนข่าวออกกี่นาที
+
 const FF_CALENDAR_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
 
 const STATE_PREFIX = "newsreact:";
@@ -33,6 +36,7 @@ module.exports = {
   CONFIRM_WINDOW_MINUTES,
   RANGE_LOOKBACK_MINUTES,
   BREAKOUT_BUFFER_PCT,
+  PRE_NEWS_ALERT_MINUTES_BEFORE,
   FF_CALENDAR_URL,
   STATE_PREFIX,
   EVENT_STATE_TTL_SECONDS,

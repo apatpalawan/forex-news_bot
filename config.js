@@ -1,46 +1,50 @@
-// Config สำหรับ News Reaction Bot (เวอร์ชัน Node.js)
+// Config สำหรับ Gold Sideway-Breakout Bot (H1 + M1)
+// ตรรกะ: เช็ค H1 sideway ก่อน -> ถ้าใช่เช็ค M1 sideway -> ถ้า sideway ทั้งคู่ เช็คทิศทางเบรคเอาท์
+// ถ้า H1 กับ M1 เบรคไปทางเดียวกัน -> แจ้งเตือนทันที (แจ้งซ้ำได้ถ้าเจอ sideway+breakout ใหม่อีกรอบ)
 
-const TRACKED_PAIRS = {
-  "EURUSD": { currencies: ["EUR", "USD"], yfSymbol: "EURUSD=X" },
-  "GBPUSD": { currencies: ["GBP", "USD"], yfSymbol: "GBPUSD=X" },
-  "USDJPY": { currencies: ["USD", "JPY"], yfSymbol: "USDJPY=X" },
-  "USDCHF": { currencies: ["USD", "CHF"], yfSymbol: "USDCHF=X" },
-  "AUDUSD": { currencies: ["AUD", "USD"], yfSymbol: "AUDUSD=X" },
-  "USDCAD": { currencies: ["USD", "CAD"], yfSymbol: "USDCAD=X" },
-  "NZDUSD": { currencies: ["NZD", "USD"], yfSymbol: "NZDUSD=X" },
-  "XAUUSD": { currencies: ["USD"], yfSymbol: "GC=F" }, // ทองคำ ผูกกับข่าว USD เป็นหลัก
-};
+const SYMBOL = "GC=F"; // Gold futures (ใช้แทน XAUUSD บน Yahoo Finance)
+const SYMBOL_LABEL = "GOLD (XAUUSD)";
 
-const MIN_IMPACT = "High";
+// ----- H1 -----
+const H1_INTERVAL = "60m";
+const H1_FETCH_RANGE = "10d"; // ดึงมาเยอะพอสำหรับ lookback + ATR period
+const H1_LOOKBACK = 20; // จำนวนแท่ง H1 ที่ใช้หากรอบ sideway
+const H1_ATR_PERIOD = 14;
+const H1_SIDEWAY_ATR_MULT = 2.5; // กรอบ (high-low) ต้อง <= ATR*ตัวคูณนี้ ถึงจะนับว่า sideway
 
-const WAIT_MINUTES_AFTER_NEWS = 3;      // รอกี่นาทีหลังข่าวก่อนเริ่มเช็ค breakout
-const CONFIRM_WINDOW_MINUTES = 15;      // หน้าต่างเวลาที่ยังยอมรับสัญญาณ
-const RANGE_LOOKBACK_MINUTES = 45;      // กรอบราคาก่อนข่าวเอามาจากกี่นาที
-const BREAKOUT_BUFFER_PCT = 0.0005;     // ต้อง break เกินกรอบกี่% ถึงนับ (0.05%)
+// ----- M1 -----
+const M1_INTERVAL = "1m";
+const M1_FETCH_RANGE = "1d"; // Yahoo จำกัด 1m ไว้ไม่กี่วัน
+const M1_LOOKBACK = 30; // จำนวนแท่ง M1 ที่ใช้หากรอบ sideway
+const M1_ATR_PERIOD = 14;
+const M1_SIDEWAY_ATR_MULT = 2.5;
 
-// แจ้งเตือนล่วงหน้าว่าข่าวกำลังจะออก (แค่บอกว่ามีข่าว ไม่ได้ทำนายทิศทาง)
-const PRE_NEWS_ALERT_MINUTES_BEFORE = 30; // แจ้งก่อนข่าวออกกี่นาที
+// ----- Breakout -----
+const BREAKOUT_BUFFER_PCT = 0.0005; // ต้อง break เกินกรอบกี่% ถึงนับว่าเบรคจริง (0.05%)
 
-const FF_CALENDAR_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json";
-
-const STATE_PREFIX = "newsreact:";
-const EVENT_STATE_TTL_SECONDS = 60 * 60 * 24; // 1 วัน
-const CALENDAR_CACHE_TTL_SECONDS = 60 * 60;   // 1 ชั่วโมง
+const STATE_PREFIX = "goldsw:";
+const LAST_ALERT_STATE_KEY = "last_alert"; // เก็บ timestamp แท่ง M1 ล่าสุดที่แจ้งไปแล้ว กันแจ้งซ้ำแท่งเดิม
+const STATE_TTL_SECONDS = 60 * 60 * 6; // 6 ชั่วโมง
 
 const DRY_RUN = (process.env.DRY_RUN || "false").toLowerCase() === "true";
 
 module.exports = {
-  TRACKED_PAIRS,
-  MIN_IMPACT,
-  WAIT_MINUTES_AFTER_NEWS,
-  CONFIRM_WINDOW_MINUTES,
-  RANGE_LOOKBACK_MINUTES,
+  SYMBOL,
+  SYMBOL_LABEL,
+  H1_INTERVAL,
+  H1_FETCH_RANGE,
+  H1_LOOKBACK,
+  H1_ATR_PERIOD,
+  H1_SIDEWAY_ATR_MULT,
+  M1_INTERVAL,
+  M1_FETCH_RANGE,
+  M1_LOOKBACK,
+  M1_ATR_PERIOD,
+  M1_SIDEWAY_ATR_MULT,
   BREAKOUT_BUFFER_PCT,
-  PRE_NEWS_ALERT_MINUTES_BEFORE,
-  FF_CALENDAR_URL,
   STATE_PREFIX,
-  EVENT_STATE_TTL_SECONDS,
-  CALENDAR_CACHE_TTL_SECONDS,
+  LAST_ALERT_STATE_KEY,
+  STATE_TTL_SECONDS,
   DRY_RUN,
   LINE_CHANNEL_ACCESS_TOKEN: process.env.LINE_CHANNEL_ACCESS_TOKEN || "",
   LINE_TO_USER_ID: process.env.LINE_TO_USER_ID || "",

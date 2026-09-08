@@ -385,6 +385,13 @@ test('buildMessage produces a short SELL message', () => {
   assert.ok(msg.includes('EURUSD'));
 });
 
+test('buildMessage shows gold futures ticker as XAUUSD', () => {
+  const { buildMessage } = require('./lib/lineNotify');
+  const msg = buildMessage('GC=F', { direction: 'up', close: 2385.2, rsi: 61.2 });
+  assert.ok(msg.includes('XAUUSD'));
+  assert.ok(!msg.includes('GC=F'));
+});
+
 // ---------------------------------------------------------------------------
 section('Summary');
 console.log(`\n${passed} passed, ${failed} failed`);

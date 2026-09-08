@@ -2,8 +2,12 @@
 
 module.exports = {
   // --- Symbols (Yahoo Finance tickers). Gold + major forex pairs. ---
+  // NOTE: 'XAUUSD=X' does not serve 1-minute intraday chart data on Yahoo
+  // Finance (confirmed live: HTTP 404) - 'GC=F' (COMEX gold futures,
+  // continuous contract) tracks spot gold closely and does support M1 data,
+  // so it's used here instead. Alert messages still display it as "XAUUSD".
   SYMBOLS: [
-    'XAUUSD=X',
+    'GC=F',
     'EURUSD=X',
     'GBPUSD=X',
     'USDJPY=X',

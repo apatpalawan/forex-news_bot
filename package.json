@@ -1,11 +1,12 @@
 {
-  "name": "gold-sideway-breakout-bot",
-  "version": "1.0.0",
+  "name": "forex-news-bot",
+  "version": "2.0.0",
   "private": true,
+  "description": "M1-only EMA50x100 -> EMA9x20 pullback + RSI14 confirmation alert bot (gold + major forex pairs)",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "test:local": "node test-local.js"
+    "test": "node test-local.js"
   }
 }

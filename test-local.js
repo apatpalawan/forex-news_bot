@@ -373,23 +373,20 @@ section('lineNotify: buildMessage()');
 test('buildMessage produces a short BUY message', () => {
   const { buildMessage } = require('./lib/lineNotify');
   const msg = buildMessage('XAUUSD=X', { direction: 'up', close: 2385.234, rsi: 61.2 });
-  assert.ok(msg.includes('BUY'));
-  assert.ok(msg.includes('XAUUSD'));
-  assert.ok(msg.length < 200, 'message should stay short to save LINE quota');
+  assert.strictEqual(msg, '🟢 Buy XAUUSD');
+  assert.ok(msg.length < 30, 'message should stay very short to save LINE quota');
 });
 
 test('buildMessage produces a short SELL message', () => {
   const { buildMessage } = require('./lib/lineNotify');
   const msg = buildMessage('EURUSD=X', { direction: 'down', close: 1.0821, rsi: 38.4 });
-  assert.ok(msg.includes('SELL'));
-  assert.ok(msg.includes('EURUSD'));
+  assert.strictEqual(msg, '🔴 Sell EURUSD');
 });
 
 test('buildMessage shows gold futures ticker as XAUUSD', () => {
   const { buildMessage } = require('./lib/lineNotify');
   const msg = buildMessage('GC=F', { direction: 'up', close: 2385.2, rsi: 61.2 });
-  assert.ok(msg.includes('XAUUSD'));
-  assert.ok(!msg.includes('GC=F'));
+  assert.strictEqual(msg, '🟢 Buy XAUUSD');
 });
 
 // ---------------------------------------------------------------------------

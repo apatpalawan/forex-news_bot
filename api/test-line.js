@@ -22,7 +22,7 @@ module.exports = async (req, res) => {
 
   const message =
     `✅ ทดสอบระบบ forex-news_bot v2\n` +
-    `EMA50x100 -> EMA9x20 + RSI (M1)\n` +
+    `EMA50x100 -> EMA9x20 + RSI (H1)\n` +
     `เวลา: ${new Date().toISOString()}`;
 
   try {

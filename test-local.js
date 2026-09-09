@@ -292,7 +292,7 @@ test('all three conditions align -> signal fires (mocked, direction up)', () => 
 });
 
 // ---------------------------------------------------------------------------
-// 4. evaluate() organic end-to-end scenarios (real ema()/rsi(), synthetic M1 prices)
+// 4. evaluate() organic end-to-end scenarios (real ema()/rsi(), synthetic H1 prices)
 // ---------------------------------------------------------------------------
 section('strategy: evaluate() organic scenarios (real indicators)');
 

@@ -2,10 +2,9 @@
 
 module.exports = {
   // --- Symbols (Yahoo Finance tickers). Gold + major forex pairs. ---
-  // NOTE: 'XAUUSD=X' does not serve 1-minute intraday chart data on Yahoo
-  // Finance (confirmed live: HTTP 404) - 'GC=F' (COMEX gold futures,
-  // continuous contract) tracks spot gold closely and does support M1 data,
-  // so it's used here instead. Alert messages still display it as "XAUUSD".
+  // NOTE: 'GC=F' (COMEX gold futures, continuous contract) is used instead of
+  // 'XAUUSD=X' - it tracks spot gold closely and reliably serves intraday
+  // chart data on Yahoo Finance. Alert messages still display it as "XAUUSD".
   SYMBOLS: [
     'GC=F',
     'EURUSD=X',
@@ -17,9 +16,9 @@ module.exports = {
     'NZDUSD=X',
   ],
 
-  // --- Timeframe: M1 only, everywhere. ---
-  INTERVAL: '1m',
-  RANGE: '5d', // Yahoo's max lookback at 1m resolution; plenty for EMA100 warm-up
+  // --- Timeframe: H1 only, everywhere. ---
+  INTERVAL: '60m',
+  RANGE: '730d', // Yahoo's max lookback at 60m resolution; plenty for EMA100 warm-up
 
   // --- EMAs ---
   EMA_FAST: 9,
@@ -27,7 +26,7 @@ module.exports = {
   EMA_MED: 50,
   EMA_LONG: 100,
 
-  // How many M1 bars after the EMA50x100 cross the EMA9x20 cross is still
+  // How many H1 bars after the EMA50x100 cross the EMA9x20 cross is still
   // considered a valid pullback-confirmation trigger.
   MAX_BARS_BETWEEN_CROSSES: 30,
 

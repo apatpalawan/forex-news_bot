@@ -16,19 +16,13 @@ module.exports = {
     'NZDUSD=X',
   ],
 
-  // --- Timeframe: H1 only, everywhere. ---
-  INTERVAL: '60m',
-  RANGE: '730d', // Yahoo's max lookback at 60m resolution; plenty for EMA100 warm-up
+  // --- Timeframe: M5 only, everywhere. ---
+  INTERVAL: '5m',
+  RANGE: '60d', // Yahoo's max lookback at 5m resolution; plenty for EMA300 warm-up
 
-  // --- EMAs ---
-  EMA_FAST: 9,
-  EMA_SLOW: 20,
-  EMA_MED: 50,
-  EMA_LONG: 100,
-
-  // How many H1 bars after the EMA50x100 cross the EMA9x20 cross is still
-  // considered a valid pullback-confirmation trigger.
-  MAX_BARS_BETWEEN_CROSSES: 30,
+  // --- EMAs (single condition: EMA100 crosses EMA300) ---
+  EMA_MED: 100,
+  EMA_LONG: 300,
 
   // --- RSI ---
   RSI_PERIOD: 14,

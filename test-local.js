@@ -189,90 +189,48 @@ test('not enough bars -> no signal', () => {
   assert.strictEqual(result.reason, 'not_enough_bars');
 });
 
-test('no fresh EMA9x20 cross at the latest bar -> no signal', () => {
-  const n = 200;
+test('no fresh EMA100x300 cross at the latest bar -> no signal', () => {
+  const n = 400;
   const candles = makeCandles(n);
   const flat = new Array(n).fill(1);
   const deps = {
-    ema: () => flat, // identical fast/slow/med/long -> diff always 0, never crosses
+    ema: () => flat, // identical med/long -> diff always 0, never crosses
     rsi: () => new Array(n).fill(60),
   };
   const result = evaluate(candles, config, deps);
   assert.strictEqual(result.signal, null);
-  assert.strictEqual(result.reason, 'no_fresh_ema9x20_cross');
+  assert.strictEqual(result.reason, 'no_fresh_ema100x300_cross');
 });
 
-test('fresh EMA9x20 cross but EMA50x100 cross too far back -> no signal', () => {
-  const n = 200;
+test('fresh EMA100x300 cross but RSI does not confirm -> no signal', () => {
+  const n = 400;
   const latest = n - 1;
   const candles = makeCandles(n);
   const deps = {
     ema: (values, period) => {
-      const arr = new Array(n).fill(1);
-      if (period === config.EMA_FAST || period === config.EMA_SLOW) {
-        // fast/slow: cross exactly at the latest bar
-        for (let i = 0; i < n; i++) arr[i] = i < latest ? -1 : 1;
-        if (period === config.EMA_SLOW) return arr.map(() => 0); // slow pinned at 0
-        return arr;
-      }
       if (period === config.EMA_MED) {
-        // med crosses up WAY earlier than the allowed window
-        const outsideWindow = latest - config.MAX_BARS_BETWEEN_CROSSES - 10;
-        for (let i = 0; i < n; i++) arr[i] = i < outsideWindow ? -1 : 1;
+        const arr = new Array(n).fill(-1);
+        arr[latest] = 1; // fresh up-cross exactly at the latest bar
         return arr;
       }
       return new Array(n).fill(0); // long pinned at 0
     },
-    rsi: () => new Array(n).fill(60),
-  };
-  const result = evaluate(candles, config, deps);
-  assert.strictEqual(result.signal, null);
-  assert.strictEqual(result.reason, 'no_prior_ema50x100_cross');
-  assert.strictEqual(result.direction, 'up');
-});
-
-test('EMA crosses align but RSI does not confirm -> no signal', () => {
-  const n = 200;
-  const latest = n - 1;
-  const trendCrossIdx = latest - 5; // well within the window
-  const deps = {
-    ema: (values, period) => {
-      const arr = new Array(n).fill(0);
-      if (period === config.EMA_FAST) {
-        for (let i = 0; i < n; i++) arr[i] = i < latest ? -1 : 1;
-        return arr;
-      }
-      if (period === config.EMA_SLOW) return new Array(n).fill(0);
-      if (period === config.EMA_MED) {
-        for (let i = 0; i < n; i++) arr[i] = i < trendCrossIdx ? -1 : 1;
-        return arr;
-      }
-      return new Array(n).fill(0); // long
-    },
     rsi: () => new Array(n).fill(40), // below midline -> should block an 'up' signal
   };
-  const candles = makeCandles(n);
   const result = evaluate(candles, config, deps);
   assert.strictEqual(result.signal, null);
   assert.strictEqual(result.reason, 'rsi_not_aligned');
   assert.strictEqual(result.direction, 'up');
 });
 
-test('all three conditions align -> signal fires (mocked, direction up)', () => {
-  const n = 200;
+test('EMA cross and RSI both align -> signal fires (mocked, direction up)', () => {
+  const n = 400;
   const latest = n - 1;
-  const trendCrossIdx = latest - 5;
   const deps = {
     ema: (values, period) => {
-      if (period === config.EMA_FAST) {
-        const arr = new Array(n).fill(-1);
-        arr[latest] = 1;
-        return arr;
-      }
-      if (period === config.EMA_SLOW) return new Array(n).fill(0);
       if (period === config.EMA_MED) {
         const arr = new Array(n).fill(-1);
-        for (let i = trendCrossIdx; i < n; i++) arr[i] = 1;
+        arr[latest] = 1;
         return arr;
       }
       return new Array(n).fill(0); // long
@@ -291,8 +249,34 @@ test('all three conditions align -> signal fires (mocked, direction up)', () => 
   assert.strictEqual(result.reason, 'ok');
 });
 
+test('EMA cross and RSI both align -> signal fires (mocked, direction down)', () => {
+  const n = 400;
+  const latest = n - 1;
+  const deps = {
+    ema: (values, period) => {
+      if (period === config.EMA_MED) {
+        const arr = new Array(n).fill(1);
+        arr[latest] = -1;
+        return arr;
+      }
+      return new Array(n).fill(0);
+    },
+    rsi: () => {
+      const arr = new Array(n).fill(60);
+      arr[latest] = 35;
+      arr[latest - 1] = 45; // falling into the trigger bar
+      return arr;
+    },
+  };
+  const candles = makeCandles(n);
+  const result = evaluate(candles, config, deps);
+  assert.ok(result.signal, 'expected a signal');
+  assert.strictEqual(result.signal.direction, 'down');
+  assert.strictEqual(result.reason, 'ok');
+});
+
 // ---------------------------------------------------------------------------
-// 4. evaluate() organic end-to-end scenarios (real ema()/rsi(), synthetic H1 prices)
+// 4. evaluate() organic end-to-end scenarios (real ema()/rsi(), synthetic M5 prices)
 // ---------------------------------------------------------------------------
 section('strategy: evaluate() organic scenarios (real indicators)');
 
@@ -300,28 +284,16 @@ function buildTrendCloses(direction) {
   const sign = direction === 'up' ? 1 : -1;
   const closes = [];
   let price = 105;
-  // long baseline with a tiny drift, giving EMA50/100 a well-defined starting sign
-  for (let i = 0; i < 150; i++) {
+  // long baseline with a tiny drift, giving EMA100/300 a well-defined
+  // starting sign (they need 300+ bars just to warm up)
+  for (let i = 0; i < 320; i++) {
     price -= sign * 0.01;
     closes.push(price);
   }
-  // small impulse that flips EMA50 across EMA100
-  for (let i = 0; i < 6; i++) {
-    price += sign * 0.5;
-    closes.push(price);
-  }
-  for (let i = 0; i < 2; i++) {
-    price += sign * 0.05;
-    closes.push(price);
-  }
-  // pullback against the new trend, deep enough to flip EMA9 across EMA20
-  for (let i = 0; i < 6; i++) {
-    price -= sign * 0.6;
-    closes.push(price);
-  }
-  // resume in the trend direction - the fresh EMA9x20 cross lands on the last bar
-  for (let i = 0; i < 4; i++) {
-    price += sign * 0.65;
+  // impulse that flips EMA100 across EMA300 exactly on the final bar,
+  // with RSI already trending the same direction into that bar
+  for (let i = 0; i < 17; i++) {
+    price += sign * 0.6;
     closes.push(price);
   }
   return closes;
@@ -337,19 +309,15 @@ function toCandles(closes) {
   }));
 }
 
-test('organic uptrend: EMA50x100 up, pullback, EMA9x20 up, RSI confirms -> BUY signal', () => {
+test('organic uptrend: EMA100x300 crosses up with RSI confirming -> BUY signal', () => {
   const candles = toCandles(buildTrendCloses('up'));
   const result = evaluate(candles, config);
   assert.ok(result.signal, `expected a signal, got reason=${result.reason}`);
   assert.strictEqual(result.signal.direction, 'up');
   assert.ok(result.signal.rsi > config.RSI_MIDLINE, 'RSI should be above midline');
-  assert.ok(
-    result.signal.barsSinceTrendCross <= config.MAX_BARS_BETWEEN_CROSSES,
-    'trend cross should be within the allowed window'
-  );
 });
 
-test('organic downtrend: EMA50x100 down, pullback, EMA9x20 down, RSI confirms -> SELL signal', () => {
+test('organic downtrend: EMA100x300 crosses down with RSI confirming -> SELL signal', () => {
   const candles = toCandles(buildTrendCloses('down'));
   const result = evaluate(candles, config);
   assert.ok(result.signal, `expected a signal, got reason=${result.reason}`);
@@ -357,12 +325,15 @@ test('organic downtrend: EMA50x100 down, pullback, EMA9x20 down, RSI confirms ->
   assert.ok(result.signal.rsi < config.RSI_MIDLINE, 'RSI should be below midline');
 });
 
-test('organic uptrend rejected once the trend cross falls outside a tighter window', () => {
-  const candles = toCandles(buildTrendCloses('up'));
-  const tightConfig = Object.assign({}, config, { MAX_BARS_BETWEEN_CROSSES: 2 });
-  const result = evaluate(candles, tightConfig);
+test('no signal once the impulse ends and the cross is no longer on the latest bar', () => {
+  // one extra flat bar after the impulse -> the EMA100x300 cross is now one
+  // bar in the past, not on the latest closed bar -> must not fire
+  const closes = buildTrendCloses('up');
+  closes.push(closes[closes.length - 1]);
+  const candles = toCandles(closes);
+  const result = evaluate(candles, config);
   assert.strictEqual(result.signal, null);
-  assert.strictEqual(result.reason, 'no_prior_ema50x100_cross');
+  assert.strictEqual(result.reason, 'no_fresh_ema100x300_cross');
 });
 
 // ---------------------------------------------------------------------------
